@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="de" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PayPocket™ - Klamotten Tycoon & Live Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        paypal: {
+                            blue: '#0070ba',
+                            darkblue: '#003087',
+                            light: '#f5f7fa',
+                            success: '#10b981'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Inter', sans-serif; overflow-x: hidden; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 15px rgba(0, 112, 186, 0.4); }
+            50% { box-shadow: 0 0 30px rgba(0, 112, 186, 0.8); }
+        }
+        .paypal-glow { animation: pulseGlow 3s infinite; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-paypal-blue selection:text-white pb-10">
+
+    <header class="bg-slate-900/95 border-b border-slate-800 sticky top-0 z-40 px-3 py-2.5 backdrop-blur">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div class="flex items-center justify-between w-full sm:w-auto gap-3">
+                <div class="flex items-center space-x-2">
+                    <div class="bg-paypal-blue text-white px-3 py-2 rounded-xl font-black text-lg tracking-wider shadow-lg shadow-paypal-blue/30 flex items-center gap-2">
+                        <i class="fa-brands fa-paypal text-xl"></i>
+                        <span>PayPocket™</span>
+                    </div>
+                    <div>
+                        <div class="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Tycoon Balance</div>
+                        <div class="text-xs font-bold text-emerald-400 flex items-center gap-1">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                            <span id="headerBalance" class="text-sm font-extrabold text-emerald-400">€1.500,00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button onclick="resetGameSave()" class="sm:hidden text-xs bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 px-2.5 py-1.5 rounded-lg border border-rose-500/20 active:scale-95 transition-all">
+                    <i class="fa-solid fa-rotate-right mr-1"></i> Reset
+                </button>
+            </div>
+
+            <nav class="flex items-center gap-1 bg-slate-800/80 p-1 rounded-xl border border-slate-700/60 overflow-x-auto max-w-full w-full sm:w-auto text-xs">
+                <button onclick="switchTab('shop')" id="nav-shop" class="nav-btn px-3.5 py-2 rounded-lg font-semibold transition-all bg-paypal-blue text-white shadow whitespace-nowrap active:scale-95">
+                    <i class="fa-solid fa-shirt mr-1"></i> Shop & Lager
+                </button>
+                <button onclick="switchTab('cars')" id="nav-cars" class="nav-btn px-3.5 py-2 rounded-lg font-semibold transition-all text-slate-400 hover:text-white hover:bg-slate-700/50 whitespace-nowrap active:scale-95">
+                    <i class="fa-solid fa-car mr-1"></i> 10 Autos
+                </button>
+                <button onclick="switchTab('jets')" id="nav-jets" class="nav-btn px-3.5 py-2 rounded-lg font-semibold transition-all text-slate-400 hover:text-white hover:bg-slate-700/50 whitespace-nowrap active:scale-95">
+                    <i class="fa-solid fa-plane mr-1"></i> 10 Jets
+                </button>
+                <button onclick="switchTab('travel')" id="nav-travel" class="nav-btn px-3.5 py-2 rounded-lg font-semibold transition-all text-slate-400 hover:text-white hover:bg-slate-700/50 whitespace-nowrap active:scale-95">
+                    <i class="fa-solid fa-earth-americas mr-1"></i> Flugreise
+                </button>
+                <button onclick="switchTab('live')" id="nav-live" class="nav-btn px-3.5 py-2 rounded-lg font-semibold transition-all text-slate-400 hover:text-white hover:bg-slate-700/50 whitespace-nowrap active:scale-95">
+                    <i class="fa-solid fa-video mr-1"></i> Live Stream
+                </button>
+                <button onclick="switchTab('stats')" id="nav-stats" class="nav-btn px-3.5 py-2 rounded-lg font-semibold transition-all text-slate-400 hover:text-white hover:bg-slate-700/50 whitespace-nowrap active:scale-95">
+                    <i class="fa-solid fa-receipt mr-1"></i> Konto
+                </button>
+            </nav>
+
+            <button onclick="resetGameSave()" class="hidden sm:flex text-xs bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 px-3 py-2 rounded-lg border border-rose-500/20 font-medium active:scale-95 transition-all">
+                <i class="fa-solid fa-rotate-right mr-1.5"></i> Spielstand Reset
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 space-y-6">
+
+        <div id="toastContainer" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2 pointer-events-none max-w-xs w-full"></div>
+
+        <section id="tab-shop" class="tab-content space-y-6">
+            <div class="bg-gradient-to-r from-slate-900 to-slate-900/90 border border-slate-800 p-5 rounded-2xl shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-extrabold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-store text-paypal-blue"></i> Klamotten Großhandel & Lager
+                    </h1>
+                    <p class="text-slate-400 text-xs mt-1">Geld gibt es NUR, wenn du Ware im Lager hast und Kunden sie abkaufen!</p>
+                </div>
+                <div class="bg-slate-800/80 px-4 py-2.5 rounded-xl border border-slate-700 text-xs flex items-center gap-3">
+                    <div>
+                        <div class="text-[10px] text-slate-400 uppercase tracking-wider">Aktueller Standort:</div>
+                        <div id="currentCountryDisplay" class="font-bold text-paypal-blue flex items-center gap-1 text-sm">
+                            <i class="fa-solid fa-location-dot"></i> Deutschland
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2 space-y-6">
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+                        <h2 class="text-sm font-bold text-white flex items-center gap-2 uppercase tracking-wider text-slate-300">
+                            <i class="fa-solid fa-cart-shopping text-paypal-blue"></i> Großhandel (Klamotten einkaufen)
+                        </h2>
+                        <div id="wholesaleContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+                    </div>
+
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+                        <h2 class="text-sm font-bold text-white flex items-center justify-between uppercase tracking-wider text-slate-300">
+                            <span><i class="fa-solid fa-boxes-stacked text-emerald-400 mr-1.5"></i> Dein Lagerbestand & Preise</span>
+                            <span class="text-[10px] text-slate-400 font-normal">Verkaufspreise festlegen</span>
+                        </h2>
+                        <div id="inventoryContainer" class="space-y-3"></div>
+                    </div>
+                </div>
+
+                <div class="space-y-6">
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                        <div class="flex items-center justify-between mb-2">
+                            <h2 class="text-sm font-bold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-bolt text-amber-400 animate-pulse"></i> Live-Kundenverkäufe
+                            </h2>
+                            <span class="text-[10px] text-emerald-400 font-mono">Kauf-Ansturm</span>
+                        </div>
+                        <p class="text-xs text-slate-400 mb-4">Kunden kaufen dein Lager innerhalb von 30–60 Sekunden ab.</p>
+
+                        <div class="w-full bg-slate-800 h-2 rounded-full mb-4 overflow-hidden border border-slate-700/50">
+                            <div id="buyerTimerBar" class="bg-paypal-blue h-full w-0 transition-all duration-300"></div>
+                        </div>
+                        
+                        <div id="salesTicker" class="space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
+                            <div class="text-center text-slate-500 py-8 text-xs italic">Warte auf nächsten Kunden...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="tab-cars" class="tab-content space-y-6 hidden">
+            <div class="bg-gradient-to-r from-slate-900 to-slate-900/90 border border-slate-800 p-5 rounded-2xl shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-extrabold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-car-side text-amber-400"></i> Exklusives Autohaus (10 Supercars)
+                    </h1>
+                    <p class="text-slate-400 text-xs mt-1">Jedes Auto zeigt präzise PS- und KM/H-Leistungswerte!</p>
+                </div>
+                <div class="bg-slate-800/80 px-4 py-2 rounded-xl border border-slate-700 text-xs font-bold text-amber-400">
+                    Gekauft: <span id="ownedCarsCount">0</span> / 10 Fahrzeuge
+                </div>
+            </div>
+
+            <div id="carsGridContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+        </section>
+
+        <section id="tab-jets" class="tab-content space-y-6 hidden">
+            <div class="bg-gradient-to-r from-slate-900 to-slate-900/90 border border-slate-800 p-5 rounded-2xl shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-extrabold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-plane-departure text-cyan-400"></i> Privatjet-Flotte (10 Flieger)
+                    </h1>
+                    <p class="text-slate-400 text-xs mt-1">Kaufe Privatjets, um in exklusive Länder und Modemetropolen zu reisen!</p>
+                </div>
+                <div class="bg-slate-800/80 px-4 py-2 rounded-xl border border-slate-700 text-xs font-bold text-cyan-400">
+                    Flotte: <span id="ownedJetsCount">0</span> / 10 Jets
+                </div>
+            </div>
+
+            <div id="jetsGridContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+        </section>
+
+        <section id="tab-travel" class="tab-content space-y-6 hidden">
+            <div class="bg-gradient-to-r from-slate-900 to-slate-900/90 border border-slate-800 p-5 rounded-2xl shadow-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-extrabold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-earth-americas text-emerald-400"></i> Internationale Flugreise
+                    </h1>
+                    <p class="text-slate-400 text-xs mt-1">Wähle dein Reiseziel. In jedem Land kannst du andere exklusive Klamotten & Autos kaufen!</p>
+                </div>
+            </div>
+
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+                <h2 class="text-sm font-bold text-white flex items-center gap-2 uppercase tracking-wider text-slate-300">
+                    <i class="fa-solid fa-map-location-dot text-emerald-400"></i> Verfügbare Länder
+                </h2>
+                <div id="destinationsGridContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+            </div>
+        </section>
+
+        <section id="tab-live" class="tab-content space-y-6 hidden">
+            <div class="bg-gradient-to-r from-slate-900 to-slate-900/90 border border-slate-800 p-5 rounded-2xl shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-extrabold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-tower-broadcast text-rose-500 animate-pulse"></i> Livestream Studio
+                    </h1>
+                    <p class="text-slate-400 text-xs mt-1">Gehe live mit deinen Luxusautos! Live-Zuschauer im Chat senden dir PayPocket-Donations.</p>
+                </div>
+                <div id="streamStatusBadge" class="px-4 py-2 rounded-xl bg-slate-800 border border-slate-700 font-semibold text-xs flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-slate-500"></span> Stream Offline
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2 space-y-4">
+                    <div class="bg-black rounded-2xl border border-slate-800 overflow-hidden shadow-2xl relative aspect-video flex flex-col items-center justify-center">
+                        <div id="offlineOverlay" class="absolute inset-0 bg-slate-950/90 flex flex-col items-center justify-center p-6 text-center z-10">
+                            <i class="fa-solid fa-video-slash text-4xl text-slate-600 mb-2"></i>
+                            <h3 class="text-lg font-bold text-white">Livestream Studio Bereit</h3>
+                            <p class="text-slate-400 text-xs max-w-sm mt-1 mb-5">Starte den Stream, um Live-Zuschauer zu bekommen und PayPocket-Spenden abzusahnen!</p>
+                            <button onclick="toggleLiveStream()" class="px-6 py-2.5 bg-rose-600 hover:bg-rose-500 active:scale-95 text-white text-xs font-bold rounded-xl shadow-lg shadow-rose-600/30 transition-all flex items-center gap-2">
+                                <i class="fa-solid fa-play"></i> Stream Starten
+                            </button>
+                        </div>
+
+                        <div id="liveActiveScreen" class="w-full h-full relative hidden flex flex-col justify-between p-4 bg-gradient-to-b from-slate-900/60 via-transparent to-black/90">
+                            <div class="flex justify-between items-center z-20">
+                                <div class="bg-rose-600 text-white px-2.5 py-1 rounded-lg text-[10px] font-bold tracking-wider flex items-center gap-1 shadow">
+                                    <span class="w-2 h-2 rounded-full bg-white animate-ping"></span> LIVE
+                                </div>
+                                <div class="bg-black/70 backdrop-blur px-3 py-1 rounded-lg text-xs font-semibold text-slate-200 flex items-center gap-2 border border-slate-800">
+                                    <i class="fa-solid fa-user-group text-rose-400"></i> <span id="viewerCount">0</span> Zuschauer
+                                </div>
+                            </div>
+
+                            <div class="text-center my-auto">
+                                <div class="inline-block p-5 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-400 mb-2 shadow-xl">
+                                    <i class="fa-solid fa-microphone-lines text-3xl"></i>
+                                </div>
+                                <h3 class="text-lg font-extrabold text-white">Flexing meine Klamotten & Luxusautos!</h3>
+                                <p id="currentStreamLocation" class="text-[11px] text-rose-300 mt-0.5">Broadcasting Live</p>
+                            </div>
+
+                            <div class="flex justify-between items-center z-20">
+                                <button onclick="toggleLiveStream()" class="px-3 py-1.5 bg-slate-800/80 hover:bg-slate-700 text-white text-xs font-bold rounded-lg border border-slate-700 active:scale-95">
+                                    Beenden
+                                </button>
+                                <div class="text-[10px] text-slate-400 bg-black/60 px-2.5 py-1 rounded-lg border border-slate-800">
+                                    PayPocket Donations Aktiv
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl flex flex-col h-[380px]">
+                    <h3 class="text-xs font-bold text-white mb-3 flex items-center justify-between pb-2 border-b border-slate-800">
+                        <span><i class="fa-solid fa-comments text-rose-400 mr-1.5"></i> Live Chat & Spenden</span>
+                        <span class="text-[10px] text-emerald-400">Online</span>
+                    </h3>
+                    <div id="liveChatMessages" class="flex-1 overflow-y-auto space-y-2.5 pr-1 text-xs">
+                        <div class="text-center text-slate-500 py-10 italic">Der Chat ist offline.</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="tab-stats" class="tab-content space-y-6 hidden">
+            <div class="bg-gradient-to-r from-slate-900 to-slate-900/90 border border-slate-800 p-5 rounded-2xl shadow-xl">
+                <h1 class="text-xl sm:text-2xl font-extrabold text-white flex items-center gap-2">
+                    <i class="fa-brands fa-paypal text-paypal-blue"></i> Transaktionsjournal
+                </h1>
+                <p class="text-slate-400 text-xs mt-1">Echte Transaktionen aus Kundenverkäufen und Live-Spenden.</p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-xl">
+                    <div class="text-[10px] text-slate-400 font-medium uppercase">Gesamtertrag</div>
+                    <div id="statTotalEarned" class="text-xl font-black text-emerald-400 mt-0.5">€0,00</div>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-xl">
+                    <div class="text-[10px] text-slate-400 font-medium uppercase">Verkaufte Teile</div>
+                    <div id="statTotalSold" class="text-xl font-black text-paypal-blue mt-0.5">0</div>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-xl">
+                    <div class="text-[10px] text-slate-400 font-medium uppercase">Erhaltene Spenden</div>
+                    <div id="statTotalDonations" class="text-xl font-black text-rose-400 mt-0.5">€0,00</div>
+                </div>
+            </div>
+
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-3">
+                <h3 class="text-xs font-bold text-white flex items-center gap-2 uppercase tracking-wider">
+                    <i class="fa-solid fa-receipt text-slate-400"></i> PayPocket Buchungen
+                </h3>
+                <div id="transactionsList" class="space-y-2 max-h-[350px] overflow-y-auto pr-1">
+                    <div class="text-center text-slate-500 py-8 text-xs italic">Noch keine Buchungen vorhanden.</div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        const SAVE_KEY = 'PayPocket_Tycoon_Save_v4';
+
+        const defaultGameState = {
+            balance: 1500.00,
+            totalEarned: 0.00,
+            totalSold: 0,
+            totalDonationsAmount: 0,
+            currentCountryId: 'germany',
+            isLive: false,
+            viewerCount: 0,
+
+            wholesaleCatalog: [
+                { id: 'tshirt_basic', name: 'Standard T-Shirt', cost: 15, price: 25, minPrice: 15, maxPrice: 40, countryId: 'germany' },
+                { id: 'hoodie_street', name: 'Streetwear Hoodie', cost: 45, price: 75, minPrice: 40, maxPrice: 120, countryId: 'germany' },
+                { id: 'sneaker_hype', name: 'Hype Sneaker Limited', cost: 120, price: 220, minPrice: 100, maxPrice: 380, countryId: 'germany' },
+                { id: 'jacket_luxury', name: 'Designer Luxus Jacke', cost: 350, price: 590, minPrice: 300, maxPrice: 950, countryId: 'germany' },
+
+                { id: 'dubai_hoodie', name: 'Goldfaden Dubai Hoodie', cost: 300, price: 550, minPrice: 250, maxPrice: 900, countryId: 'dubai' },
+                { id: 'tokyo_jacket', name: 'Harajuku Cyber Jacket', cost: 400, price: 750, minPrice: 350, maxPrice: 1200, countryId: 'tokyo' },
+                { id: 'ny_jacket', name: 'Broadway Leather Coat', cost: 500, price: 890, minPrice: 400, maxPrice: 1500, countryId: 'newyork' },
+                { id: 'paris_couture', name: 'Parisian Haute Couture', cost: 1200, price: 2200, minPrice: 1000, maxPrice: 3800, countryId: 'paris' }
+            ],
+
+            inventory: [
+                { id: 'tshirt_basic', name: 'Standard T-Shirt', price: 25, minPrice: 15, maxPrice: 40, stock: 5, countryId: 'germany' },
+                { id: 'hoodie_street', name: 'Streetwear Hoodie', price: 75, minPrice: 40, maxPrice: 120, stock: 3, countryId: 'germany' }
+            ],
+
+            cars: [
+                { id: 'car_1', name: 'Golf 8 GTI Street', countryId: 'germany', price: 3500, owned: false, ps: 245, kmh: 250, img: 'https://images.unsplash.com/photo-1541899481282-d53bffe3c351?auto=format&fit=crop&w=600&q=80' },
+                { id: 'car_2', name: 'BMW M3 Competition', countryId: 'germany', price: 18000, owned: false, ps: 510, kmh: 290, img: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=600&q=80' },
+                { id: 'car_3', name: 'Porsche 911 GT3 RS', countryId: 'germany', price: 85000, owned: false, ps: 525, kmh: 296, img: 'https://images.unsplash.com/photo-1614162692292-7ac56d7f7f1e?auto=format&fit=crop&w=600&q=80' },
+                { id: 'car_4', name: 'Mercedes-AMG G63', countryId: 'dubai', price: 150000, owned: false, ps: 585, kmh: 240, img: 'https://images.unsplash.com/photo-1520031441872-265e4ff70366?auto=format&fit=crop&w=600&q=80' },
+                { id: 'car_5', name: 'Bugatti Chiron Sport', countryId: 'dubai', price: 1200000, owned: false, ps: 1600, kmh: 440, img: 'https://images.unsplash.com/photo-1544829099-b9a0c07fad1a?auto=format&fit=crop&w=600&q=80' },
+                { id: 'car_6', name: 'Nissan Skyline GT-R R34', countryId: 'tokyo', price: 95000, owned: false, ps: 330, kmh: 270, img: 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?auto=format&fit=crop&w=600&q=80' },
+                { id: 'car_7', name: 'Toyota Supra Drift Edition', countryId: 'tokyo', price: 110000, owned: false, ps: 500, kmh: 285, img: 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&w=600&q=80' },
+                { id: 'car_8', name: 'Cadillac Escalade V', countryId: 'newyork', price: 140000, owned: false, ps: 682, kmh: 250, img: 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=600&q=80' },
+                { id: 'car_9', name: 'Ford Mustang GT500', countryId: 'newyork', price: 90000, owned: false, ps: 760, kmh: 290, img: 'https://images.unsplash.com/photo-1584345604476-8ec5e12e42dd?auto=format&fit=crop&w=600&q=80' },
+                { id: 'car_10', name: 'Bugatti Veyron Pur Sang', countryId: 'paris', price: 1800000, owned: false, ps: 1200, kmh: 410, img: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=600&q=80' }
+            ],
+
+            jets: [
+                { id: 'jet_1', name: 'Cessna Citation CJ3', price: 250000, owned: true, speed: '770 km/h', range: 'Europa' },
+                { id: 'jet_2', name: 'Embraer Phenom 300', price: 650000, owned: false, speed: '839 km/h', range: 'Mittelstrecke' },
+                { id: 'jet_3', name: 'Bombardier Learjet 75', price: 1500000, owned: false, speed: '860 km/h', range: 'Kontinental' },
+                { id: 'jet_4', name: 'Dassault Falcon 2000', price: 3500000, owned: false, speed: '851 km/h', range: 'Transatlantik' },
+                { id: 'jet_5', name: 'Gulfstream G450', price: 7000000, owned: false, speed: '850 km/h', range: 'Interkontinental' },
+                { id: 'jet_6', name: 'Bombardier Global 7500', price: 12000000, owned: false, speed: '982 km/h', range: 'Global' },
+                { id: 'jet_7', name: 'Gulfstream G650ER', price: 18000000, owned: false, speed: '956 km/h', range: 'Ultra Long Range' },
+                { id: 'jet_8', name: 'Boeing Business Jet VIP', price: 35000000, owned: false, speed: '870 km/h', range: 'VIP Palace' },
+                { id: 'jet_9', name: 'Airbus ACJ319neo Gold', price: 60000000, owned: false, speed: '890 km/h', range: 'Royal Fleet' },
+                { id: 'jet_10', name: 'Supersonic Concorde X', price: 120000000, owned: false, speed: '2200 km/h', range: 'Mach 2.2' }
+            ],
+
+            countries: [
+                { id: 'germany', name: 'Deutschland', city: 'Berlin', requiredJetIndex: 0, flag: '🇩🇪', desc: 'Fashion & Streetwear Zentrum.' },
+                { id: 'dubai', name: 'Dubai', city: 'Dubai City', requiredJetIndex: 1, flag: '🇦🇪', desc: 'Oase der Superreichen.' },
+                { id: 'tokyo', name: 'Japan', city: 'Tokio', requiredJetIndex: 2, flag: '🇯🇵', desc: 'Hypebeast & JDM Mekka.' },
+                { id: 'newyork', name: 'USA', city: 'New York', requiredJetIndex: 3, flag: '🇺🇸', desc: 'Big Apple Metropole.' },
+                { id: 'paris', name: 'Frankreich', city: 'Paris', requiredJetIndex: 4, flag: '🇫🇷', desc: 'Haute Couture Hauptstadt.' }
+            ],
+
+            transactions: []
+        };
+
+        let game = JSON.parse(JSON.stringify(defaultGameState));
+
+        const customerNames = [
+            "Maximilian_H", "Sophie_Style", "Lukas_Kicks", "Felix_W", "Jana_Lux", 
+            "Kevin_B", "Timo_2026", "Nico_GmbH", "Leon_Trader", "Sarah_Fashion", 
+            "Dominik_K", "Marcel_Street", "Timon_V", "HypeBeast_92", "Ben_K"
+        ];
+
+        const chatPhrases = [
+            "Boah, krasser Hoodie! 🔥",
+            "Zeig mal deine Garage im Stream!",
+            "Hab dir gerade was gespendet bro! 💸",
+            "Wo hast du die Jacke her?",
+            "Bester Streamer auf PayPocket!"
+        ];
+
+        function saveGame() {
+            try {
+                localStorage.setItem(SAVE_KEY, JSON.stringify(game));
+            } catch (e) { console.error("Save error:", e); }
+        }
+
+        function loadGame() {
+            try {
+                const saved = localStorage.getItem(SAVE_KEY);
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    game = Object.assign({}, defaultGameState, parsed);
+                }
+            } catch (e) {
+                console.error("Load error:", e);
+                game = JSON.parse(JSON.stringify(defaultGameState));
+            }
+        }
+
+        function resetGameSave() {
+            if (confirm("Möchtest du deinen Spielstand wirklich komplett zurücksetzen?")) {
+                localStorage.removeItem(SAVE_KEY);
+                game = JSON.parse(JSON.stringify(defaultGameState));
+                saveGame();
+                location.reload();
+            }
+        }
+
+        function formatCurrency(amount) {
+            return '€' + (amount || 0).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function switchTab(tabId) {
+            const tabs = ['shop', 'cars', 'jets', 'travel', 'live', 'stats'];
+            
+            tabs.forEach(t => {
+                const contentEl = document.getElementById(`tab-${t}`);
+                const btnEl = document.getElementById(`nav-${t}`);
+
+                if (contentEl) {
+                    if (t === tabId) {
+                        contentEl.classList.remove('hidden');
+                    } else {
+                        contentEl.classList.add('hidden');
+                    }
+                }
+
+                if (btnEl) {
+                    if (t === tabId) {
+                        btnEl.className = "nav-btn px-3.5 py-2 rounded-lg font-semibold transition-all bg-paypal-blue text-white shadow whitespace-nowrap active:scale-95";
+                    } else {
+                        btnEl.className = "nav-btn px-3.5 py-2 rounded-lg font-semibold transition-all text-slate-400 hover:text-white hover:bg-slate-700/50 whitespace-nowrap active:scale-95";
+                    }
+                }
+            });
+        }
+
+        function showToast(title, message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            
+            let bgClass = 'bg-slate-900/90 border-slate-700';
+            let icon = 'fa-circle-check text-emerald-400';
+            if (type === 'donation') {
+                bgClass = 'bg-rose-950/90 border-rose-800';
+                icon = 'fa-heart text-rose-400';
+            }
+
+            toast.className = `pointer-events-auto flex items-start gap-2.5 p-3 rounded-xl border shadow-2xl backdrop-blur-md transition-all duration-300 transform translate-y-4 opacity-0 text-xs ${bgClass}`;
+            toast.innerHTML = `
+                <div class="p-1.5 rounded-lg bg-slate-800 text-sm"><i class="fa-solid ${icon}"></i></div>
+                <div class="flex-1">
+                    <div class="font-bold text-white flex items-center justify-between">
+                        <span>${title}</span>
+                    </div>
+                    <div class="text-slate-300 mt-0.5 text-[11px]">${message}</div>
+                </div>
+            `;
+            container.appendChild(toast);
+
+            setTimeout(() => toast.classList.remove('translate-y-4', 'opacity-0'), 50);
+            setTimeout(() => {
+                toast.classList.add('translate-y-4', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        function updateUI() {
+            document.getElementById('headerBalance').innerText = formatCurrency(game.balance);
+            document.getElementById('statTotalEarned').innerText = formatCurrency(game.totalEarned);
+            document.getElementById('statTotalSold').innerText = game.totalSold;
+            document.getElementById('statTotalDonations').innerText = formatCurrency(game.totalDonationsAmount);
+
+            document.getElementById('ownedCarsCount').innerText = game.cars.filter(c => c.owned).length;
+            document.getElementById('ownedJetsCount').innerText = game.jets.filter(j => j.owned).length;
+
+            renderShop();
+            renderCars();
+            renderJets();
+            renderDestinations();
+            saveGame();
+        }
+
+        function renderShop() {
+            const currentCountry = game.countries.find(c => c.id === game.currentCountryId);
+            document.getElementById('currentCountryDisplay').innerHTML = `<i class="fa-solid fa-location-dot"></i> ${currentCountry.name} (${currentCountry.city})`;
+
+            const wholesaleContainer = document.getElementById('wholesaleContainer');
+            const catalogItems = game.wholesaleCatalog.filter(i => i.countryId === game.currentCountryId);
+
+            wholesaleContainer.innerHTML = catalogItems.map(item => `
+                <div class="bg-slate-800/60 border border-slate-700/80 rounded-xl p-3 flex items-center justify-between gap-3">
+                    <div>
+                        <div class="text-xs font-bold text-white">${item.name}</div>
+                        <div class="text-[11px] text-slate-400">EK: <span class="text-emerald-400 font-bold">${formatCurrency(item.cost)}</span></div>
+                    </div>
+                    <button onclick="buyWholesaleStock('${item.id}')" class="px-3 py-1.5 bg-paypal-blue hover:bg-blue-600 active:scale-95 text-white text-xs font-bold rounded-lg shadow">
+                        +1 Kaufen
+                    </button>
+                </div>
+            `).join('');
+
+            const inventoryContainer = document.getElementById('inventoryContainer');
+            const invItems = game.inventory.filter(i => i.countryId === game.currentCountryId);
+
+            if (invItems.length === 0) {
+                inventoryContainer.innerHTML = `<div class="text-center text-slate-500 py-6 text-xs italic">Kein Lagerbestand in diesem Land. Kaufe oben Klamotten ein!</div>`;
+                return;
+            }
+
+            inventoryContainer.innerHTML = invItems.map(item => `
+                <div class="bg-slate-800/80 border border-slate-700 rounded-xl p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div>
+                        <div class="text-xs font-bold text-white">${item.name}</div>
+                        <div class="text-[11px] text-slate-400">Bestand: <b class="text-emerald-400">${item.stock} Stk.</b> (Erlaubt: ${formatCurrency(item.minPrice)} - ${formatCurrency(item.maxPrice)})</div>
+                    </div>
+                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                        <input type="number" id="price_${item.id}" value="${item.price}" min="${item.minPrice}" max="${item.maxPrice}" 
+                            onchange="updateInventoryPrice('${item.id}', this.value)"
+                            class="w-24 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-xs font-bold text-white focus:outline-none focus:border-paypal-blue">
+                        <span class="text-[11px] text-slate-400">Preis</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function buyWholesaleStock(id) {
+            const catalogItem = game.wholesaleCatalog.find(i => i.id === id);
+            if (!catalogItem) return;
+
+            if (game.balance < catalogItem.cost) {
+                showToast("Fehler", "Nicht genügend PayPocket Guthaben!", "donation");
+                return;
+            }
+
+            game.balance -= catalogItem.cost;
+
+            let invItem = game.inventory.find(i => i.id === id && i.countryId === catalogItem.countryId);
+            if (invItem) {
+                invItem.stock += 1;
+            } else {
+                game.inventory.push({
+                    id: catalogItem.id,
+                    name: catalogItem.name,
+                    price: catalogItem.price,
+                    minPrice: catalogItem.minPrice,
+                    maxPrice: catalogItem.maxPrice,
+                    stock: 1,
+                    countryId: catalogItem.countryId
+                });
+            }
+
+            showToast("Eingekauft", `1x ${catalogItem.name} ins Lager gelegt.`);
+            updateUI();
+        }
+
+        function updateInventoryPrice(id, val) {
+            const item = game.inventory.find(i => i.id === id);
+            if (!item) return;
+            let num = parseFloat(val);
+            if (num < item.minPrice) num = item.minPrice;
+            if (num > item.maxPrice) num = item.maxPrice;
+            item.price = num;
+            saveGame();
+        }
+
+        let buyerProgress = 0;
+        function updateBuyerTimerProgress() {
+            buyerProgress += 2.0;
+            const bar = document.getElementById('buyerTimerBar');
+            if (bar) bar.style.width = Math.min(buyerProgress, 100) + '%';
+
+            if (buyerProgress >= 100) {
+                buyerProgress = 0;
+                processCustomerPurchase();
+            }
+        }
+
+        function processCustomerPurchase() {
+            const stockItems = game.inventory.filter(i => i.stock > 0 && i.countryId === game.currentCountryId);
+            if (stockItems.length === 0) return;
+
+            const randomItem = stockItems[Math.floor(Math.random() * stockItems.length)];
+            const randomBuyer = customerNames[Math.floor(Math.random() * customerNames.length)];
+
+            randomItem.stock -= 1;
+            const revenue = randomItem.price;
+            
+            game.balance += revenue;
+            game.totalEarned += revenue;
+            game.totalSold += 1;
+
+            game.transactions.unshift({
+                date: new Date().toLocaleTimeString(),
+                title: `Verkauf: ${randomItem.name}`,
+                amount: revenue,
+                buyer: randomBuyer,
+                type: 'sale'
+            });
+
+            showToast("Kaufabschluss!", `${randomBuyer} hat ${randomItem.name} gekauft (+${formatCurrency(revenue)})`);
+            addTickerSale(randomBuyer, randomItem.name, revenue);
+            updateUI();
+            renderTransactions();
+        }
+
+        function addTickerSale(buyer, itemName, amount) {
+            const ticker = document.getElementById('salesTicker');
+            if (ticker.querySelector('.italic')) ticker.innerHTML = '';
+
+            const entry = document.createElement('div');
+            entry.className = "bg-slate-800/80 border border-slate-700/60 p-2.5 rounded-xl flex items-center justify-between text-xs";
+            entry.innerHTML = `
+                <div class="flex items-center gap-2">
+                    <div class="w-7 h-7 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
+                        <i class="fa-solid fa-bag-shopping text-[11px]"></i>
+                    </div>
+                    <div>
+                        <div class="font-bold text-white">${buyer}</div>
+                        <div class="text-[10px] text-slate-400">${itemName}</div>
+                    </div>
+                </div>
+                <div class="text-emerald-400 font-extrabold">+${formatCurrency(amount)}</div>
+            `;
+            ticker.prepend(entry);
+            if (ticker.children.length > 8) ticker.lastChild.remove();
+        }
+
+        function renderCars() {
+            const container = document.getElementById('carsGridContainer');
+            container.innerHTML = game.cars.map(car => `
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl flex flex-col justify-between">
+                    <div>
+                        <div class="h-36 w-full relative overflow-hidden bg-slate-950">
+                            <img src="${car.img}" alt="${car.name}" class="w-full h-full object-cover">
+                        </div>
+                        <div class="p-4 space-y-2.5">
+                            <h3 class="text-sm font-bold text-white">${car.name}</h3>
+                            <div class="grid grid-cols-2 gap-2 bg-slate-800/60 p-2 rounded-xl border border-slate-800 text-[11px]">
+                                <div class="text-slate-300"><i class="fa-solid fa-gauge text-amber-400 mr-1"></i> <b>${car.ps}</b> PS</div>
+                                <div class="text-slate-300"><i class="fa-solid fa-gauge-high text-cyan-400 mr-1"></i> <b>${car.kmh}</b> KM/H</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-4 pt-0 flex items-center justify-between border-t border-slate-800/80 mt-2">
+                        <div class="text-amber-400 font-extrabold text-xs">${formatCurrency(car.price)}</div>
+                        ${car.owned ? 
+                            '<span class="text-[11px] bg-emerald-500/20 text-emerald-400 px-2.5 py-1 rounded-lg font-bold">In Garage</span>' :
+                            `<button onclick="buyCar('${car.id}')" class="px-3 py-1 bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 text-xs font-bold rounded-lg">Kaufen</button>`
+                        }
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function buyCar(id) {
+            const car = game.cars.find(c => c.id === id);
+            if (!car || car.owned) return;
+            if (game.balance < car.price) {
+                showToast("Fehler", "Guthaben reicht nicht aus!", "donation");
+                return;
+            }
+            game.balance -= car.price;
+            car.owned = true;
+            showToast("Traumwagen Gekauft!", `${car.name} (${car.ps} PS) steht in deiner Garage!`);
+            updateUI();
+        }
+
+        function renderJets() {
+            const container = document.getElementById('jetsGridContainer');
+            container.innerHTML = game.jets.map((jet, idx) => `
+                <div class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 flex flex-col justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2.5 bg-cyan-500/10 text-cyan-400 rounded-xl text-lg">
+                            <i class="fa-solid fa-plane"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs font-bold text-white">#${idx+1} ${jet.name}</div>
+                            <div class="text-[10px] text-slate-400">${jet.speed} • Reichweite: ${jet.range}</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between pt-2 border-t border-slate-800">
+                        <span class="text-cyan-400 font-bold text-xs">${formatCurrency(jet.price)}</span>
+                        ${jet.owned ? 
+                            '<span class="text-[10px] text-emerald-400 font-bold">Bereit</span>' :
+                            `<button onclick="buyJet('${jet.id}')" class="px-2.5 py-1 bg-cyan-600 hover:bg-cyan-500 active:scale-95 text-white text-xs font-bold rounded-lg">Kaufen</button>`
+                        }
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function buyJet(id) {
+            const jet = game.jets.find(j => j.id === id);
+            if (!jet || jet.owned) return;
+            if (game.balance < jet.price) {
+                showToast("Fehler", "Zu wenig Guthaben für diesen Jet!", "donation");
+                return;
+            }
+            game.balance -= jet.price;
+            jet.owned = true;
+            showToast("Flugzeug Gekauft!", `${jet.name} steht am Hangar bereit.`);
+            updateUI();
+        }
+
+        function renderDestinations() {
+            const container = document.getElementById('destinationsGridContainer');
+            container.innerHTML = game.countries.map(country => {
+                const isCurrent = game.currentCountryId === country.id;
+                const reqJet = game.jets[country.requiredJetIndex];
+                const canTravel = country.requiredJetIndex === 0 || (reqJet && reqJet.owned);
+
+                return `
+                    <div class="bg-slate-900 border ${isCurrent ? 'border-cyan-500/80' : 'border-slate-800'} rounded-2xl p-4 shadow-xl flex flex-col justify-between gap-3">
+                        <div>
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="text-xl">${country.flag}</span>
+                                ${isCurrent ? '<span class="text-[9px] bg-cyan-500/20 text-cyan-400 px-2 py-0.5 rounded-full font-bold">Standort</span>' : ''}
+                            </div>
+                            <h3 class="text-xs font-bold text-white">${country.name} (${country.city})</h3>
+                            <p class="text-[11px] text-slate-400 mt-0.5">${country.desc}</p>
+                        </div>
+
+                        <div class="pt-2 border-t border-slate-800 flex items-center justify-between">
+                            ${isCurrent ? 
+                                '<span class="text-[11px] text-slate-500 font-medium">Bereits hier</span>' :
+                                canTravel ? 
+                                    `<button onclick="travelTo('${country.id}')" class="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 active:scale-95 text-white text-xs font-bold rounded-lg">Fliegen nach ${country.city}</button>` :
+                                    `<span class="text-[10px] text-rose-400 font-medium"><i class="fa-solid fa-lock mr-1"></i> Jet #${country.requiredJetIndex+1} nötig</span>`
+                            }
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function travelTo(countryId) {
+            const dest = game.countries.find(c => c.id === countryId);
+            if (!dest) return;
+            game.currentCountryId = dest.id;
+            showToast("Angekommen!", `Du bist nach ${dest.name} (${dest.city}) geflogen.`);
+            updateUI();
+        }
+
+        function toggleLiveStream() {
+            game.isLive = !game.isLive;
+            const overlay = document.getElementById('offlineOverlay');
+            const activeScreen = document.getElementById('liveActiveScreen');
+            const statusBadge = document.getElementById('streamStatusBadge');
+
+            if (game.isLive) {
+                overlay.classList.add('hidden');
+                activeScreen.classList.remove('hidden');
+                statusBadge.className = "px-4 py-2 rounded-xl bg-rose-950 border border-rose-800 font-semibold text-xs text-rose-400";
+                statusBadge.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping"></span> Stream LIVE`;
+                game.viewerCount = Math.floor(Math.random() * 1200) + 300;
+                document.getElementById('viewerCount').innerText = game.viewerCount;
+                showToast("Stream Gestartet!", "Live-Zuschauer treten bei.");
+            } else {
+                overlay.classList.remove('hidden');
+                activeScreen.classList.add('hidden');
+                statusBadge.className = "px-4 py-2 rounded-xl bg-slate-800 border border-slate-700 font-semibold text-xs";
+                statusBadge.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-slate-500"></span> Stream Offline`;
+            }
+        }
+
+        function liveStreamTick() {
+            if (!game.isLive) return;
+
+            game.viewerCount += Math.floor(Math.random() * 41) - 20;
+            if (game.viewerCount < 100) game.viewerCount = 100;
+            document.getElementById('viewerCount').innerText = game.viewerCount;
+
+            const chatContainer = document.getElementById('liveChatMessages');
+            if (chatContainer.querySelector('.italic')) chatContainer.innerHTML = '';
+
+            const randomName = customerNames[Math.floor(Math.random() * customerNames.length)];
+            const isDonation = Math.random() < 0.35;
+
+            const msgDiv = document.createElement('div');
+
+            if (isDonation) {
+                const amounts = [10, 25, 50, 100, 250];
+                const amount = amounts[Math.floor(Math.random() * amounts.length)];
+                
+                game.balance += amount;
+                game.totalEarned += amount;
+                game.totalDonationsAmount += amount;
+
+                msgDiv.className = "bg-rose-950/40 border border-rose-800/60 p-2 rounded-xl text-xs";
+                msgDiv.innerHTML = `
+                    <div class="flex items-center justify-between font-bold text-rose-400">
+                        <span><i class="fa-solid fa-heart mr-1"></i> ${randomName}</span>
+                        <span>+${formatCurrency(amount)}</span>
+                    </div>
+                    <div class="text-slate-300 text-[11px] mt-0.5">"Gönn dir was Nices im Shop!"</div>
+                `;
+                showToast("Live Spende!", `${randomName} spendete ${formatCurrency(amount)}!`, 'donation');
+                game.transactions.unshift({
+                    date: new Date().toLocaleTimeString(),
+                    title: `Live Spende`,
+                    amount: amount,
+                    buyer: randomName,
+                    type: 'donation'
+                });
+                renderTransactions();
+                updateUI();
+            } else {
+                const phrase = chatPhrases[Math.floor(Math.random() * chatPhrases.length)];
+                msgDiv.className = "bg-slate-800/60 border border-slate-700/60 p-2 rounded-xl text-xs";
+                msgDiv.innerHTML = `
+                    <div class="font-bold text-slate-300">${randomName}</div>
+                    <div class="text-slate-400 text-[11px]">${phrase}</div>
+                `;
+            }
+
+            chatContainer.prepend(msgDiv);
+            if (chatContainer.children.length > 20) chatContainer.lastChild.remove();
+        }
+
+        function renderTransactions() {
+            const container = document.getElementById('transactionsList');
+            if (game.transactions.length === 0) {
+                container.innerHTML = `<div class="text-center text-slate-500 py-6 text-xs italic">Noch keine Buchungen registriert.</div>`;
+                return;
+            }
+
+            container.innerHTML = game.transactions.slice(0, 25).map(tx => `
+                <div class="bg-slate-800/70 border border-slate-700 p-2.5 rounded-xl flex items-center justify-between text-xs">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-7 h-7 rounded-full ${tx.type === 'donation' ? 'bg-rose-500/20 text-rose-400' : 'bg-emerald-500/20 text-emerald-400'} flex items-center justify-center font-bold">
+                            <i class="fa-solid ${tx.type === 'donation' ? 'fa-heart' : 'fa-arrow-down'} text-[11px]"></i>
+                        </div>
+                        <div>
+                            <div class="font-bold text-white">${tx.title}</div>
+                            <div class="text-[10px] text-slate-400">${tx.buyer} • ${tx.date}</div>
+                        </div>
+                    </div>
+                    <div class="${tx.type === 'donation' ? 'text-rose-400' : 'text-emerald-400'} font-extrabold">+${formatCurrency(tx.amount)}</div>
+                </div>
+            `).join('');
+        }
+
+        window.onload = function() {
+            loadGame();
+            updateUI();
+
+            setInterval(updateBuyerTimerProgress, 300);
+            setInterval(liveStreamTick, 4000);
+        };
+    </script>
+</body>
+</html>
